@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thuật toán Naive Bayes - Dự báo thời tiết</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f2f2f2;}
+        .container { max-width: 700px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);}
+        h1 { color: #2667ff; text-align: center;}
+        h2 { color: #252525; }
+        .example { background: #eef4ff; padding: 16px; border-radius: 6px; margin: 16px 0;}
+        label { display: block; margin: 10px 0 4px;}
+        select, button { padding: 6px; font-size: 16px; border-radius: 4px; }
+        .result { margin-top: 18px; font-weight: bold; color: #3d8b37;}
+        footer { text-align: center; margin-top: 32px; color: #888;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Thuật toán Naive Bayes trong Dự báo Thời tiết</h1>
+        <h2>Naive Bayes là gì?</h2>
+        <p>
+            Naive Bayes là một thuật toán học máy dựa trên định lý Bayes, giả định các đặc trưng (feature) là độc lập với nhau. 
+            Thuật toán này thường được dùng để phân loại, ví dụ như phân loại email spam, dự đoán thời tiết, nhận dạng văn bản,...
+        </p>
+        <h2>Ứng dụng trong dự báo thời tiết</h2>
+        <p>
+            Ta có thể dùng Naive Bayes để dự đoán liệu ngày mai có mưa không dựa trên các đặc trưng như: trời nhiều mây, độ ẩm, sức gió,...
+        </p>
+        <div class="example">
+            <strong>Ví dụ:</strong> 
+            <br>
+            Dựa vào bảng dữ liệu sau, hãy dự báo hôm nay có mưa hay không.
+            <table border="1" cellpadding="6" style="margin-top:10px;">
+                <tr>
+                    <th>Trời</th>
+                    <th>Độ ẩm</th>
+                    <th>Gió</th>
+                    <th>Dự báo</th>
+                </tr>
+                <tr>
+                    <td>Nắng</td>
+                    <td>Cao</td>
+                    <td>Yếu</td>
+                    <td>Không mưa</td>
+                </tr>
+                <tr>
+                    <td>Mưa</td>
+                    <td>Cao</td>
+                    <td>Yếu</td>
+                    <td>Có mưa</td>
+                </tr>
+                <tr>
+                    <td>Âm u</td>
+                    <td>Trung bình</td>
+                    <td>Mạnh</td>
+                    <td>Có mưa</td>
+                </tr>
+                <tr>
+                    <td>Nắng</td>
+                    <td>Thấp</td>
+                    <td>Mạnh</td>
+                    <td>Không mưa</td>
+                </tr>
+            </table>
+        </div>
+        <h2>Dự báo thử với Naive Bayes</h2>
+        <form id="predictForm">
+            <label for="weather">Trời:</label>
+            <select id="weather">
+                <option value="Nắng">Nắng</option>
+                <option value="Mưa">Mưa</option>
+                <option value="Âm u">Âm u</option>
+            </select>
+            <label for="humidity">Độ ẩm:</label>
+            <select id="humidity">
+                <option value="Cao">Cao</option>
+                <option value="Trung bình">Trung bình</option>
+                <option value="Thấp">Thấp</option>
+            </select>
+            <label for="wind">Gió:</label>
+            <select id="wind">
+                <option value="Yếu">Yếu</option>
+                <option value="Mạnh">Mạnh</option>
+            </select>
+            <button type="submit">Dự báo</button>
+        </form>
+        <div class="result" id="result"></div>
+        <h2>Giải thích</h2>
+        <p>
+            Dự báo dựa trên xác suất có điều kiện của từng đặc trưng với kết quả mưa/không mưa, sau đó chọn xác suất cao nhất.<br>
+            <i>Ví dụ:</i> Nếu bạn chọn "Mưa, Cao, Yếu" thì dự báo sẽ là "Có mưa" vì xác suất này cao nhất dựa trên dữ liệu mẫu.
+        </p>
+        <footer>
+            &copy; 2025 - Trang web demo Naive Bayes
+        </footer>
+    </div>
+    <script>
+        // Dữ liệu mẫu: {Trời, Độ ẩm, Gió, Dự báo}
+        const data = [
+            { weather: "Nắng", humidity: "Cao", wind: "Yếu", rain: "Không mưa" },
+            { weather: "Mưa", humidity: "Cao", wind: "Yếu", rain: "Có mưa" },
+            { weather: "Âm u", humidity: "Trung bình", wind: "Mạnh", rain: "Có mưa" },
+            { weather: "Nắng", humidity: "Thấp", wind: "Mạnh", rain: "Không mưa" },
+        ];
+
+        // Hàm tính xác suất Naive Bayes đơn giản
+        function predictNaiveBayes(input) {
+            const classes = ["Có mưa", "Không mưa"];
+            let classProb = {};
+
+            // Tính xác suất từng lớp
+            classes.forEach(cls => {
+                // P(Class)
+                const total = data.filter(d => d.rain === cls).length / data.length;
+                // P(Weather|Class)
+                const weatherP = data.filter(d => d.rain === cls && d.weather === input.weather).length /
+                                 data.filter(d => d.rain === cls).length || 0.01;
+                // P(Humidity|Class)
+                const humidityP = data.filter(d => d.rain === cls && d.humidity === input.humidity).length /
+                                   data.filter(d => d.rain === cls).length || 0.01;
+                // P(Wind|Class)
+                const windP = data.filter(d => d.rain === cls && d.wind === input.wind).length /
+                               data.filter(d => d.rain === cls).length || 0.01;
+                classProb[cls] = total * weatherP * humidityP * windP;
+            });
+
+            // Chọn lớp có xác suất cao nhất
+            return Object.entries(classProb).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+        }
+
+        document.getElementById('predictForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = {
+                weather: document.getElementById('weather').value,
+                humidity: document.getElementById('humidity').value,
+                wind: document.getElementById('wind').value
+            };
+            const prediction = predictNaiveBayes(input);
+            document.getElementById('result').textContent = "Dự báo: " + prediction;
+        });
+    </script>
+</body>
+</html>
